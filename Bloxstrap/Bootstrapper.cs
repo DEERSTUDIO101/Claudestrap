@@ -286,7 +286,8 @@ namespace Claudestrap
 
                 if (_cancelTokenSource.IsCancellationRequested) return;
 
-                if (!File.Exists(Path.Combine(_latestVersionDirectory, AppData.ExecutableName)))
+                if (!File.Exists(Path.Combine(_latestVersionDirectory, AppData.ExecutableName))
+                    && (IsStudioLaunch || !File.Exists(Path.Combine(_latestVersionDirectory, ProcRobloxExe))))
                     throw new FileNotFoundException("Roblox installation is incomplete. Enable Roblox updates and try again.",
                         Path.Combine(_latestVersionDirectory, AppData.ExecutableName));
 
@@ -1544,7 +1545,8 @@ namespace Claudestrap
                 catch (Exception ex)
                 { App.Logger.WriteLine(LOG_IDENT, $"MigrateCompatibilityFlags: {ex.Message}"); }
 
-                if (!File.Exists(Path.Combine(_latestVersionDirectory, AppData.ExecutableName)))
+                if (!File.Exists(Path.Combine(_latestVersionDirectory, AppData.ExecutableName))
+                    && (IsStudioLaunch || !File.Exists(Path.Combine(_latestVersionDirectory, ProcRobloxExe))))
                     throw new InvalidDataException("Roblox executable is missing after package extraction.");
 
                 AppData.State.VersionGuid = _latestVersionGuid;

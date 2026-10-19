@@ -53,6 +53,45 @@ namespace Claudestrap.UI.ViewModels.Settings
         public const string Enabled = "True";
         public const string Disabled = "False";
 
+        public IReadOnlyList<GraphicsProfile> GraphicsProfileOptions { get; } = Enum.GetValues<GraphicsProfile>();
+
+        public GraphicsProfile? SelectedGraphicsProfile
+        {
+            get => GraphicsProfiles.GetEffectiveProfile(App.Settings.Prop.SelectedGraphicsProfile, App.FastFlags.GetValue);
+            set
+            {
+                if (!value.HasValue || !Enum.IsDefined(value.Value)) return;
+
+                foreach (var pair in GraphicsProfiles.GetOverrides(value.Value))
+                    App.FastFlags.SetValue(pair.Key, pair.Value);
+
+                App.Settings.Prop.UseFastFlagManager = true;
+                App.Settings.Prop.SelectedGraphicsProfile = value;
+                OnPropertyChanged(nameof(UseFastFlagManager));
+                OnPropertyChanged(nameof(SelectedGraphicsProfile));
+                OnPropertyChanged(nameof(GraphicsProfileDescription));
+                OnPropertyChanged(nameof(SelectedTextureQuality));
+                OnPropertyChanged(nameof(SelectedMSAALevel));
+                OnPropertyChanged(nameof(MinGrassDistance));
+                OnPropertyChanged(nameof(MaxGrassDistance));
+                OnPropertyChanged(nameof(LowPolyMeshes));
+            }
+        }
+
+        public string GraphicsProfileDescription => GraphicsProfiles.Describe(SelectedGraphicsProfile);
+
+        public bool ClientStabilityMode
+        {
+            get => App.Settings.Prop.ClientStabilityMode;
+            set => App.Settings.Prop.ClientStabilityMode = value;
+        }
+
+        public bool CaptureHangDiagnostics
+        {
+            get => App.Settings.Prop.CaptureHangDiagnostics;
+            set => App.Settings.Prop.CaptureHangDiagnostics = value;
+        }
+
         public bool DisableTelemetry
         {
             get => App.FastFlags?.GetPreset("Telemetry.TelemetryV2Url") == "0.0.0.0";
@@ -588,6 +627,8 @@ namespace Claudestrap.UI.ViewModels.Settings
                 App.FastFlags.SetPreset("Rendering.LowPolyMeshes2", value ? "0" : null);
                 App.FastFlags.SetPreset("Rendering.LowPolyMeshes3", value ? "0" : null);
                 App.FastFlags.SetPreset("Rendering.LowPolyMeshes4", value ? "0" : null);
+                OnPropertyChanged(nameof(SelectedGraphicsProfile));
+                OnPropertyChanged(nameof(GraphicsProfileDescription));
             }
         }
         public bool CacheSizeImprovement
@@ -674,7 +715,8 @@ namespace Claudestrap.UI.ViewModels.Settings
             {
                 App.FastFlags.SetPreset("Rendering.MSAA1", MSAALevels[value]);
                 App.FastFlags.SetPreset("Rendering.MSAA2", MSAALevels[value]);
-
+                OnPropertyChanged(nameof(SelectedGraphicsProfile));
+                OnPropertyChanged(nameof(GraphicsProfileDescription));
             }
         }
 
@@ -694,6 +736,8 @@ namespace Claudestrap.UI.ViewModels.Settings
                     App.FastFlags.SetPreset("Rendering.TextureQuality.OverrideEnabled", "True");
                     App.FastFlags.SetPreset("Rendering.TextureQuality.Level", TextureQualities[value]);
                 }
+                OnPropertyChanged(nameof(SelectedGraphicsProfile));
+                OnPropertyChanged(nameof(GraphicsProfileDescription));
             }
         }
 
@@ -743,6 +787,8 @@ namespace Claudestrap.UI.ViewModels.Settings
             {
                 App.FastFlags.SetPreset("Rendering.Nograss1", value.ToString());
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedGraphicsProfile));
+                OnPropertyChanged(nameof(GraphicsProfileDescription));
             }
         }
 
@@ -759,6 +805,8 @@ namespace Claudestrap.UI.ViewModels.Settings
             {
                 App.FastFlags.SetPreset("Rendering.Nograss2", value.ToString());
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedGraphicsProfile));
+                OnPropertyChanged(nameof(GraphicsProfileDescription));
             }
         }
 

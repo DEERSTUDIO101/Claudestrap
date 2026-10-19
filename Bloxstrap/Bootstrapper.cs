@@ -570,6 +570,11 @@ namespace Claudestrap
             const string LOG_IDENT = "Bootstrapper::StartRoblox";
             SetStatus("Starting Roblox");
 
+            App.Logger.WriteLine(LOG_IDENT,
+                $"Graphics profile: {GraphicsProfiles.GetEffectiveProfile(App.Settings.Prop.SelectedGraphicsProfile, App.FastFlags.GetValue)?.ToString() ?? "Custom"}; " +
+                $"client stability mode: {App.Settings.Prop.ClientStabilityMode}; " +
+                $"hang diagnostics: {App.Settings.Prop.CaptureHangDiagnostics}");
+
             try
             {
                 await Task.Run(LaunchFleasionIfEnabled, ct);
@@ -717,7 +722,7 @@ namespace Claudestrap
                 RestartMemoryCleanerFromSettings();
                 StartOptimizerIfNeeded();
 
-                if (App.Settings.Prop?.MultiAccount == true)
+                if (App.Settings.Prop?.MultiAccount == true && !App.Settings.Prop.ClientStabilityMode)
                     RobloxMemoryCleaner.CleanAllRobloxMemory();
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
@@ -781,7 +786,7 @@ namespace Claudestrap
 
         private async Task DisableCrashHandlerIfNeeded(string logIdent, CancellationToken ct)
         {
-            if (App.Settings.Prop.DisableCrash != true) return;
+            if (App.Settings.Prop.DisableCrash != true || App.Settings.Prop.ClientStabilityMode) return;
 
             await Task.Delay(800, ct).ConfigureAwait(false);
 
@@ -806,6 +811,7 @@ namespace Claudestrap
         private async Task LaunchWatcherIfNeeded(string logFileName, CancellationToken ct)
         {
             bool needWatcher = (App.Settings?.Prop.EnableActivityTracking ?? false)
+                || (App.Settings?.Prop.CaptureHangDiagnostics ?? false)
                 || App.LaunchSettings.TestModeFlag?.Active == true;
 
             if (!needWatcher) return;
@@ -922,6 +928,12 @@ namespace Claudestrap
             _memoryCleanerTimer?.Stop();
             _memoryCleanerTimer = null;
 
+            if (App.Settings.Prop.ClientStabilityMode)
+            {
+                App.Logger.WriteLine("MemoryCleaner", "Skipped by client stability mode.");
+                return;
+            }
+
             var settings = ClaudestrapRobloxSettingsManager.Load();
             int seconds = settings.MemoryCleanerIntervalSeconds;
 
@@ -957,6 +969,8 @@ namespace Claudestrap
 
         private void StartOptimizerIfNeeded()
         {
+            if (App.Settings.Prop.ClientStabilityMode) return;
+
             if (App.Settings.Prop?.OptimizeRoblox != true &&
                 App.Settings.Prop?.IsBetterServersEnabled != true) return;
 
@@ -1102,6 +1116,8 @@ namespace Claudestrap
 
         private void StartCpuLimitWatcherIfNeeded()
         {
+            if (App.Settings.Prop.ClientStabilityMode) return;
+
             var priority = App.Settings.Prop?.SelectedCpuPriority;
             if (string.IsNullOrEmpty(priority) ||
                 priority.Equals("Automatic", StringComparison.OrdinalIgnoreCase)) return;
@@ -1163,6 +1179,8 @@ namespace Claudestrap
         private static async Task TryApplyPriorityAsync(
             Process proc, string logIdent, CancellationToken ct)
         {
+            if (App.Settings.Prop.ClientStabilityMode) return;
+
             try
             {
                 await Task.Delay(1100, ct).ConfigureAwait(false);

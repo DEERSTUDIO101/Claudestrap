@@ -28,6 +28,9 @@ namespace Claudestrap.Models.Persistable
 
         public int CleanRobloxNumber = 0;
         public bool DisableCrash { get; set; } = false;
+        public GraphicsProfile? SelectedGraphicsProfile { get; set; }
+        public bool ClientStabilityMode { get; set; } = true;
+        public bool CaptureHangDiagnostics { get; set; } = false;
         public int CpuCoreLimit { get; set; } = Environment.ProcessorCount;
         public string ShiftlockCursorSelectedPath { get; set; } = "";
         public string UseCustomIcon { get; set; } = "";

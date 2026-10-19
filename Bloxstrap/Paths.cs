@@ -41,7 +41,9 @@ namespace Claudestrap
             if (string.IsNullOrWhiteSpace(baseDirectory))
                 throw new ArgumentException("Base directory cannot be null or empty.", nameof(baseDirectory));
 
-            Base = baseDirectory;
+            Base = Path.GetFullPath(baseDirectory);
+            RobloxBase = RobloxStoragePaths.Resolve(Base,
+                Path.Combine(LocalAppData, App.ProjectName), robloxBaseDirectory);
 
             Downloads = Path.Combine(Base, "Downloads");
             SavedBackups = Path.Combine(Base, "SavedBackups");
@@ -64,7 +66,10 @@ namespace Claudestrap
             EnsureDirectoryExists(SavedBackups);
             EnsureDirectoryExists(Logs);
             EnsureDirectoryExists(Integrations);
-            EnsureDirectoryExists(Versions);
+            // This directory is required for installation. Do not continue with
+            // mod deployment after silently swallowing a broken storage path.
+            Directory.CreateDirectory(Versions);
+            App.Logger.WriteLine("Paths::Initialize", $"Roblox storage: {RobloxBase}");
             EnsureDirectoryExists(Mods);
             EnsureDirectoryExists(CustomThemes);
         }

@@ -279,10 +279,7 @@ namespace Claudestrap
             // silently change install location if we detect a portable run
             if (installLocation is null && Directory.GetParent(Paths.Process)?.FullName is string processDir)
             {
-                var files = Directory.GetFiles(processDir).Select(x => Path.GetFileName(x)).ToArray();
-
-                // check if settings.json and state.json are the only files in the folder
-                if (files.Length <= 3 && files.Contains("Settings.json") && files.Contains("State.json") && files.Contains("DownloadStats.json"))
+                if (RobloxStoragePaths.IsPortableInstallation(processDir))
                 {
                     installLocation = processDir;
                     fixInstallLocation = true;

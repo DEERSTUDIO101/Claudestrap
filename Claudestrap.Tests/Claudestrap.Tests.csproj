@@ -17,5 +17,6 @@
     <Compile Include="..\Bloxstrap\Enums\GraphicsProfile.cs" Link="Source\GraphicsProfile.cs" />
     <Compile Include="..\Bloxstrap\Utility\GraphicsProfiles.cs" Link="Source\GraphicsProfiles.cs" />
     <Compile Include="..\Bloxstrap\Utility\HangDetectionState.cs" Link="Source\HangDetectionState.cs" />
+    <Compile Include="..\Bloxstrap\Utility\RobloxStoragePaths.cs" Link="Source\RobloxStoragePaths.cs" />
   </ItemGroup>
 </Project>

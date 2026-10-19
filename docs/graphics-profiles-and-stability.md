@@ -63,6 +63,27 @@ unresponsive window alone does not prove a permanent deadlock. A real Roblox pro
 may deny dump access even when the test helper permits it. Captures are attempts,
 not guaranteed full dumps of a protected client.
 
+## Roblox storage paths
+
+Existing version caches in the installation's `ClaudestrapData/RblxVersions`,
+beside the launcher, or under the legacy AppData directory are reused in that
+order. A new custom installation uses `<installation>/ClaudestrapData`; it does
+not require an AppData junction. An explicitly supplied Roblox storage directory
+is honored. A dangling legacy junction is ignored when selecting storage for a
+custom installation.
+
+Portable installations are recognized by `AppSettings.json` (or legacy
+`Settings.json`) together with `State.json`, even when additional files are present.
+
+Failure to create the version directory is reported during initialization. Failed
+or cancelled package installation stops the launch before mod deployment, and an
+installation is not marked successful without a client executable. With updates
+disabled, an existing installed version can still be used.
+
+The path-fix preview is versioned `1.1.1.8-preview.1` (assembly/file `1.1.1.8`),
+above the official `1.1.1.7` build observed during diagnosis, so the updater does
+not immediately offer that older binary as an upgrade.
+
 ## Validation
 
 ```powershell

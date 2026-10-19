@@ -277,10 +277,18 @@ namespace Claudestrap
 
             if (!_noConnection)
             {
-                if (AppData.State.VersionGuid != _latestVersionGuid || _mustUpgrade)
-                    await UpgradeRoblox();
+                if ((AppData.State.VersionGuid != _latestVersionGuid || _mustUpgrade)
+                    && !await UpgradeRoblox())
+                {
+                    Dialog?.CloseBootstrapper();
+                    return;
+                }
 
                 if (_cancelTokenSource.IsCancellationRequested) return;
+
+                if (!File.Exists(Path.Combine(_latestVersionDirectory, AppData.ExecutableName)))
+                    throw new FileNotFoundException("Roblox installation is incomplete. Enable Roblox updates and try again.",
+                        Path.Combine(_latestVersionDirectory, AppData.ExecutableName));
 
                 await ApplyModifications();
                 ApplyLockDefaultIfNeeded(LOG_IDENT);
@@ -1388,7 +1396,7 @@ namespace Claudestrap
                 ct: ct).ConfigureAwait(false);
         }
 
-        private async Task UpgradeRoblox()
+        private async Task<bool> UpgradeRoblox()
         {
             const string LOG_IDENT = "Bootstrapper::UpgradeRoblox";
             var ct = _cancelTokenSource.Token;
@@ -1396,7 +1404,7 @@ namespace Claudestrap
             if (Interlocked.Exchange(ref _isInstalling, 1) == 1)
             {
                 App.Logger.WriteLine(LOG_IDENT, "Upgrade already in progress — skipping.");
-                return;
+                return false;
             }
 
             try
@@ -1406,11 +1414,17 @@ namespace Claudestrap
                     SetStatus(Strings.Bootstrapper_Status_CancelUpgrade);
                     await Task.Delay(250, ct).ConfigureAwait(false);
 
-                    if (!Directory.Exists(_latestVersionDirectory))
+                    if (!File.Exists(AppData.ExecutablePath))
+                    {
                         Frontend.ShowMessageBox(
                             Strings.Bootstrapper_Dialog_NoUpgradeWithoutClient,
                             MessageBoxImage.Warning, MessageBoxButton.OK);
-                    return;
+                        return false;
+                    }
+
+                    _latestVersionGuid = AppData.State.VersionGuid;
+                    _latestVersionDirectory = AppData.Directory;
+                    return true;
                 }
 
                 SetStatus(string.IsNullOrEmpty(AppData.State.VersionGuid)
@@ -1443,7 +1457,7 @@ namespace Claudestrap
                 {
                     Frontend.ShowMessageBox(Strings.Bootstrapper_NotEnoughSpace, MessageBoxImage.Error);
                     App.Terminate(ErrorCode.ERROR_INSTALL_FAILURE);
-                    return;
+                    return false;
                 }
 
                 if (Dialog is not null)
@@ -1507,7 +1521,7 @@ namespace Claudestrap
                 await Task.WhenAll(tasks).ConfigureAwait(false);
                 sw.Stop();
 
-                if (ct.IsCancellationRequested) return;
+                if (ct.IsCancellationRequested) return false;
                 if (failedPackages > 0)
                     throw new Exception($"{failedPackages} package(s) failed during upgrade.");
 
@@ -1529,6 +1543,9 @@ namespace Claudestrap
                 try { MigrateCompatibilityFlags(); }
                 catch (Exception ex)
                 { App.Logger.WriteLine(LOG_IDENT, $"MigrateCompatibilityFlags: {ex.Message}"); }
+
+                if (!File.Exists(Path.Combine(_latestVersionDirectory, AppData.ExecutableName)))
+                    throw new InvalidDataException("Roblox executable is missing after package extraction.");
 
                 AppData.State.VersionGuid = _latestVersionGuid;
                 AppData.State.PackageHashes.Clear();
@@ -1568,10 +1585,12 @@ namespace Claudestrap
                 { App.Logger.WriteLine(LOG_IDENT, $"Register size failed: {ex.Message}"); }
 
                 App.State.Save();
+                return true;
             }
             catch (TaskCanceledException)
             {
                 App.Logger.WriteLine(LOG_IDENT, "Upgrade cancelled.");
+                return false;
             }
             catch (Exception ex)
             {
@@ -1579,6 +1598,7 @@ namespace Claudestrap
                 Frontend.ShowMessageBox(
                     $"{Strings.Bootstrapper_Status_Upgrading} failed:\n{ex.Message}",
                     MessageBoxImage.Error);
+                return false;
             }
             finally
             {
